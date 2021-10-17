@@ -1,0 +1,322 @@
+<!doctype html >
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+<head>
+    <meta http-equiv="Content-type" content="text/html;charset=utf-8">
+    <meta charset="utf-8">
+    <meta id="view" name="viewport" content=", initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover"/>
+    <style>
+        .screen {
+            width: 900px;
+            margin: 0 auto;
+            padding: 1em;
+            background: #fff;
+        }
+
+        .title {
+            text-align: center;
+        }
+
+        .vspace {
+            height: 250px;
+        }
+
+        .row {
+            text-align: center;
+            clear: both;
+        }
+
+        .cell {
+            width: 150px;
+            height: 150px;
+            display: block;
+            float: left;
+            font-size: 5em;
+            background: transparent;
+            border: none;
+        }
+
+        .cell-00 {
+            border-right: 5px solid #aaa;
+            border-bottom: 5px solid #aaa;
+        }
+
+        .cell-01 {
+            border-right: 5px solid #aaa;
+            border-bottom: 5px solid #aaa;
+        }
+
+        .cell-02 {
+            border-bottom: 5px solid #aaa;
+        }
+
+        .cell-10 {
+            border-right: 5px solid #aaa;
+            border-bottom: 5px solid #aaa;
+        }
+
+        .cell-11 {
+            border-right: 5px solid #aaa;
+            border-bottom: 5px solid #aaa;
+        }
+
+        .cell-12 {
+            border-bottom: 5px solid #aaa;
+        }
+
+        .cell-20 {
+            border-right: 5px solid #aaa;
+        }
+
+        .cell-21 {
+            border-right: 5px solid #aaa;
+        }
+
+        .cell-22 {
+        }
+
+        .board {
+            clear: both;
+            height: 500px;
+        }
+
+        .pink {
+            color: hotpink;
+        }
+
+        .green {
+            color: darkgreen;
+        }
+
+        .onEnter {
+            animation-name: pop-in;
+            animation-duration: 0.5s;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @keyframes pop-in {
+            from {
+                font-size: 6em;
+            }
+
+            to {
+                font-size: 5em;
+            }
+        }
+
+        .actionBtn {
+            padding: 1em 3em;
+            font-size: 2.5em;
+            display: block;
+            margin: 2em auto;
+            border: none;
+            background: saddlebrown;
+            color: #ffffff;
+        }
+    </style>
+</head>
+<body>
+
+<!--
+<div class="screen">
+    <h1 class="title">Tic Tac Toe</h1>
+    <h2 class="title">by Ju<sup>22</sup>/Dad<sup>33</sup></h2>
+    <div class="vspace"></div>
+    <div>
+
+    </div>
+</div>
+-->
+
+<div class="screen">
+    <h1 class="title" id="currentPlayer"></h1>
+
+    <button class="actionBtn" id="start">Play</button>
+    <div class="board hidden" id="board">
+        <div class="row">
+            <button class="cell cell-00" id="cell-0,0"></button>
+            <button class="cell cell-01" id="cell-0,1"></button>
+            <button class="cell cell-02" id="cell-0,2"></button>
+        </div>
+        <div class="row">
+            <button class="cell cell-10" id="cell-1,0"></button>
+            <button class="cell cell-11" id="cell-1,1"></button>
+            <button class="cell cell-12" id="cell-1,2"></button>
+        </div>
+        <div class="row">
+            <button class="cell cell-20" id="cell-2,0"></button>
+            <button class="cell cell-21" id="cell-2,1"></button>
+            <button class="cell cell-22" id="cell-2,2"></button>
+        </div>
+    </div>
+    <h1 class="title" id="log"></h1>
+</div>
+
+<script>
+  function main() {
+    console.log('Main');
+    //                 0    1
+    const players = ['Ju', 'Princess Slick'];
+    const symbols = ['O', 'X'];
+    const colors = ['green', 'pink'];
+
+    let currentTurn = (Math.random() * 1000 | 0) % 2;
+    let winner = null;
+    let winningPosition = null;
+
+    const POSSIBLE_WINS = [
+      [0, 1, 2],
+      [3, 4, 5],
+      [6, 7, 8],
+      [0, 3, 6],
+      [1, 4, 7],
+      [2, 5, 8],
+      [0, 4, 8],
+      [2, 4, 6],
+    ];
+
+    const currentPlayerEl = document.getElementById('currentPlayer');
+    const logEl = document.getElementById('log');
+    const startBtnEl = document.getElementById('start');
+    const board = document.getElementById('board');
+
+    startBtnEl.addEventListener('click', (event) => {
+      SOUNDS[5].play();
+      startBtnEl.style.display = 'none';
+      board.classList.remove('hidden');
+      render();
+    });
+
+    // Could use document.querySelectorAll('.cell'), but not sure if order is deterministic
+    const cells = [
+      document.getElementById('cell-0,0'),
+      document.getElementById('cell-0,1'),
+      document.getElementById('cell-0,2'),
+      document.getElementById('cell-1,0'),
+      document.getElementById('cell-1,1'),
+      document.getElementById('cell-1,2'),
+      document.getElementById('cell-2,0'),
+      document.getElementById('cell-2,1'),
+      document.getElementById('cell-2,2'),
+    ];
+
+    const SOUNDS = [
+      new Audio('/smb_fireball.wav'),
+      new Audio('/smb_coin.wav'),
+      new Audio('/smb_mariodie.wav'),
+      new Audio('/smb_stage_clear.wav'),
+      new Audio('/smb_pause.wav'),
+      new Audio('/sm64_happy_message.wav'),
+    ];
+
+    board.addEventListener('click', (event) => {
+      const btn = event.target;
+      if (btn.nodeName !== 'BUTTON') {
+        return;
+      }
+
+      if (winner != null) {
+        return;
+      }
+
+      if (btn.getAttribute('marked')) {
+        SOUNDS[4].play();
+        return;
+      }
+
+      btn.setAttribute('marked', symbols[currentTurn]);
+      // btn.setAttribute('disabled', 'true');
+      btn.classList.add(colors[currentTurn]);
+
+      SOUNDS[currentTurn].play();
+
+      checkBoard();
+
+      if (winner === null) {
+        currentTurn = currentTurn + 1;
+        if (currentTurn > 1) {
+          currentTurn = 0;
+        }
+      }
+
+      render();
+    });
+
+    function checkBoard() {
+      let markedCells = {};
+      POSSIBLE_WINS.some((combo, pos) => {
+        let total = 0;
+        combo.forEach((i) => {
+          const filled = cells[i].getAttribute('marked');
+          if (filled) {
+            markedCells[i] = true;
+          }
+
+          if (filled === symbols[currentTurn]) {
+            total += 1;
+          }
+        });
+
+        if (total === 3) {
+          winner = currentTurn;
+          winningPosition = pos;
+          return true;
+        }
+      });
+
+      if (winner !== null) {
+        return;
+      }
+
+      if (Object.keys(markedCells).length === 9) {
+        winner = -1;
+      }
+    }
+
+    function render() {
+      function highlight() {
+        if (winningPosition === null) {
+          return;
+        }
+
+        const toHighlight = POSSIBLE_WINS[winningPosition];
+        cells.forEach((cell, i) => {
+          if (toHighlight.indexOf(i) < 0) {
+            cell.style.color = '#eee';
+          } else {
+            cell.style.fontWeight = 900;
+          }
+        });
+        console.log('Highlight position', winningPosition, POSSIBLE_WINS[winningPosition]);
+      }
+
+      currentPlayerEl.textContent = players[currentTurn];
+
+      Array.from(cells).forEach((cell) => {
+        const symbol = cell.getAttribute('marked');
+        if (symbol) {
+          cell.textContent = symbol;
+          cell.classList.add('onEnter');
+        }
+      });
+
+      if (winner !== null) {
+        if (winner < 0) {
+          logEl.textContent = 'Draw :(';
+          SOUNDS[2].play();
+        } else {
+          logEl.textContent = `${players[currentTurn]} wins!`;
+          SOUNDS[3].play();
+          highlight();
+        }
+        return;
+      }
+    }
+  }
+</script>
+<script>
+  main();
+</script>
+</body>
